@@ -1,0 +1,5 @@
+{:use-qualified-keywords? false,
+ :tables
+ {:user
+  {:path "/Users/efraimmgon/repos/projects/jarvis/resources/db/user",
+   :counter 1}}}
