@@ -1,9 +1,10 @@
 (ns jarvis.utils.views
   (:require
-    [jarvis.utils.components :as c]
-    [jarvis.utils.events :refer [<sub]]
-    [re-frame.core :as rf]
-    [reagent.core :as r]))
+   [jarvis.utils.components :as c]
+   [jarvis.utils.events :refer [<sub]]
+   [re-frame.core :as rf]
+   [reagent.core :as r]
+   [reitit.frontend.easy :as rfe]))
 
 
 ;;; ---------------------------------------------------------------------------
@@ -125,7 +126,7 @@
      :data-bs-toggle "dropdown",
      :aria-expanded "false"}
     [:i {:class "fa fa-bell cursor-pointer"}]]
-       
+
    ;; notification list
    [:ul
     {:class "dropdown-menu  dropdown-menu-end  px-2 py-3 me-sm-n4",
@@ -139,10 +140,9 @@
        {:class "d-flex py-1"}
        [:div
         {:class "my-auto"}
-        #_
-        [:img
-         {:src "../assets/img/team-2.jpg",
-          :class "avatar avatar-sm  me-3"}]]
+        #_[:img
+           {:src "../assets/img/team-2.jpg",
+            :class "avatar avatar-sm  me-3"}]]
        [:div
         {:class "d-flex flex-column justify-content-center"}
         [:h6
@@ -162,10 +162,9 @@
        {:class "d-flex py-1"}
        [:div
         {:class "my-auto"}
-        #_
-        [:img
-         {:src "../assets/img/small-logos/logo-spotify.svg",
-          :class "avatar avatar-sm bg-gradient-dark  me-3"}]]
+        #_[:img
+           {:src "../assets/img/small-logos/logo-spotify.svg",
+            :class "avatar avatar-sm bg-gradient-dark  me-3"}]]
        [:div
         {:class "d-flex flex-column justify-content-center"}
         [:h6
@@ -243,43 +242,43 @@
     :data-scroll "true"}
    [:div
     {:class "container-fluid py-1 px-3"}
-    
+
     ;; TODO
     [breadcrumbs]
-    
+
     [:div
      {:class "collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4",
       :id "navbar"}
-     
+
      ;; TODO
      [search-bar]
-     
+
      [:ul
       {:class "navbar-nav  justify-content-end"}
-      
+
       ;; TODO
       ;; online builder link (replace with ?)
       [online-builder-button]
-      
+
       ;; TODO
       ;; star @ github (replace with ?)
       [github-stars-link]
-      
+
       ;; sidebar toggler
       [sidebar-toggler]
-      
+
       ;; TODO
       ;; settings
       [settings-button]
-      
+
       ;; TODO
       ;; notifications
       [notifications-widget]
-      
+
       ;; TODO
       ;; sign in link (replace with logout link/icon)
       [sign-in-icon]]]]])
-    
+
 
 ;;; ---------------------------------------------------------------------------
 ;;; Sidebar 
@@ -298,44 +297,87 @@
      :href "https://virtuai.com"
      :target "_blank"}
     ;; TODO: add logo img
-    #_
-    [:img
-     {:src "/img/logo-ct.png",
-      :class "navbar-brand-img h-100",
-      :alt "main_logo"}]
+    #_[:img
+       {:src "/img/logo-ct.png",
+        :class "navbar-brand-img h-100",
+        :alt "main_logo"}]
     [:span
      {:class "ms-1 font-weight-bold text-white"}
      "Jarvis AI"]]])
+
+
+(defn nav-item [{:keys [icon href label]}]
+  [:li
+   {:class "nav-item"}
+   [:a
+    ; active bg-gradient-primary
+    {:href href
+     :class "nav-link text-white link-style"}
+    icon
+    [:span {:class "sidenav-normal  ms-2  ps-1"} label]]])
+
+
+(defn new-project-tab []
+  [:li
+   {:class "nav-item"}
+   [:a
+    {:class "nav-link text-white link-style"}
+    [:span {:class "sidenav-mini-icon"} "NP"]
+    [:span {:class "nav-link-text ms-2 ps-1"} "New Project"]]])
+
+
+(defn projects-tab []
+  [:li
+   {:class "nav-item"}
+
+   [:a
+    {:data-bs-toggle "collapse",
+     :href "#projectsTab",
+     :class "nav-link text-white",
+     :aria-controls "projectsTab",
+     :role "button"
+     :aria-expanded "false"}
+    [:i {:class "material-icons-round opacity-10"} "image"]
+    [:span {:class "nav-link-text ms-2 ps-1"} "Projects"]]
+
+   ;; Dropdown items
+   [:div
+    {:class "collapse", :id "projectsTab"} ; show
+    [:ul
+     {:class "nav"}
+
+     [nav-item
+      {:label "New Project"
+       :icon [:i {:class "material-icons-round"} "add"]
+       :href (rfe/href :projects/new)}]
+
+     [nav-item
+      {:icon [:span {:class "sidenav-mini-icon"} "SRP"]
+       :label "Some Random Project"}]]]])
 
 
 (defn sidebar-navigation []
   [:div
    {:class "collapse navbar-collapse  w-auto",
     :id "sidenav-collapse-main"}
-   
+
    [:ul
     {:class "navbar-nav"}
-    
+
     ;; Dashboard
     [:li
      {:class "nav-item"}
      [:a
-      {:class "nav-link text-white active bg-gradient-primary",
-       :href "../pages/dashboard.html"}
+      {:class "nav-link text-white",
+       :href (rfe/href :home)}
       [:div
        {:class
         "text-white text-center me-2 d-flex align-items-center justify-content-center"}
        [:i {:class "material-icons opacity-10"} "dashboard"]]
-      [:span {:class "nav-link-text ms-1"} "Dashboard"]]]
-    
-    ;; Account pages
-    [:li
-     {:class "nav-item mt-3"}
-     [:h6
-      {:class
-       "ps-4 ms-2 text-uppercase text-xs text-white font-weight-bolder opacity-8"}
-      "Account pages"]]
-    
+      [:span {:class "nav-link-text ms-1"} "All Projects"]]]
+
+    [projects-tab]
+
     ;; Profile
     [:li
      {:class "nav-item"}
@@ -346,18 +388,18 @@
         "text-white text-center me-2 d-flex align-items-center justify-content-center"}
        [:i {:class "material-icons opacity-10"} "person"]]
       [:span {:class "nav-link-text ms-1"} "Profile"]]]]])
-    
-    
+
+
 (defn sidebar []
   [:aside
    {:class
     "sidenav navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-3   bg-gradient-dark",
     :id "sidenav-main"}
-   
+
    [sidebar-logo]
-   
+
    [:hr {:class "horizontal light mt-0 mb-2"}]
-   
+
    [sidebar-navigation]])
 
 
@@ -372,7 +414,7 @@
     :content "width=device-width, initial-scale=1, shrink-to-fit=no"}]
   [:link
    {:rel "apple-touch-icon",
-    :sizes "76x76", 
+    :sizes "76x76",
     :href "/img/apple-icon.png"}]
   [:link
    {:rel "icon", :type "image/png", :href "/img/favicon.png"}]
@@ -434,7 +476,7 @@
         [:a
          {:href "https://www.virtuai.com/license",
           :class "nav-link pe-0 text-muted",
-          :target "_blank"} 
+          :target "_blank"}
          "License"]]]]]]])
 
 
@@ -452,13 +494,13 @@
       [error-modal-ui]
       [:div
        [sidebar]
-       [:main 
+       [:main
         {:class "main-content position-relative max-height-vh-100 h-100 border-radius-lg"}
         [navbar]
         (into
-          [:div
-           {:class "container-fluid py-4"}]
-          components)
+         [:div
+          {:class "container-fluid py-4"}]
+         components)
         [footer]]]]]))
 
 

@@ -29,7 +29,7 @@
 (rf/reg-event-fx
  :write-embeddings
  base-interceptors
- (fn [_ [response]]
+ (fn [_ [coll response]]
    (println "Tokens:" (get-tokens response))
    (let [response (get-embedding response)]
      {:dispatch-n
@@ -39,7 +39,7 @@
           :data response})]
        [:fsdb/query
         (fsdb/create!
-         {:coll [:projects project-id],
+         {:coll coll,
           :data (get-tokens response)})]]})))
 
 
@@ -57,3 +57,4 @@
                           :model "text-embedding-ada-002"}
                  :on-success on-success
                  :on-failure (or on-failure [:common/log])}}))
+
