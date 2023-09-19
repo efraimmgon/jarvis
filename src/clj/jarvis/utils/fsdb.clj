@@ -211,6 +211,12 @@
       (fs/delete-dir path))))
 
 
+(defn exists?
+  [{:keys [coll]}]
+  (fs/exists?
+   (get-resource coll)))
+
+
 ;;; ----------------------------------------------------------------------------
 ;;; GET, SAVE, DELETE
 ;;; ----------------------------------------------------------------------------
@@ -224,7 +230,6 @@
   (some-> (get-resource coll id)
           (io/file "data.edn")
           load-edn))
-
 
 (defn get-all
   "Reads and returns the contents of the given collection."
