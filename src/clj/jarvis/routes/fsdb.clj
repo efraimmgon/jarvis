@@ -33,7 +33,10 @@
              :admin? true
              :active? true
              :email "example@gmail.com"
-             :password "bcrypt+sha512$86186fc28f83b3e3db78bcf8350a3a57$12$8f215420e68fd7922561167b07354f05d8db6d49e212689e"}})))
+             :password "bcrypt+sha512$86186fc28f83b3e3db78bcf8350a3a57$12$8f215420e68fd7922561167b07354f05d8db6d49e212689e"
+             :last-login nil
+             :created-at (java.time.Instant/now)
+             :updated-at (java.time.Instant/now)}})))
 
 (create-admin!)
 
