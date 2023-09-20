@@ -3,7 +3,7 @@
    [ajax.core :as ajax]
    [reagent.core :as r]
    [re-frame.core :as rf]
-   [jarvis.utils.events :refer [base-interceptors]]
+   [jarvis.utils.events :refer [base-interceptors query]]
    [jarvis.utils.fsdb :as fsdb]
    [jarvis.utils.views :as views]))
 
@@ -269,5 +269,19 @@
      :response-format (ajax/json-response-format {:keywords? true})
      :on-success (or on-success [:projects/delete-project-success])
      :on-failure (or on-failure [:common/log])}}))
-  
-  
+
+;; subscriptions
+
+(rf/reg-sub :projects/all query)
+(rf/reg-sub :projects/active query)
+
+(comment
+
+  (rf/dispatch
+   [:projects/create-project!
+    {:name "Journal"
+     :description "Daily Journals Archive: A dedicated space for storing daily written reflections, thoughts, and experiences. Updated daily, intended for personal growth and historical record."
+     :owner "bfe84dfb-6652-4d72-97a5-45176423c7cd"}])
+
+
+  :end)

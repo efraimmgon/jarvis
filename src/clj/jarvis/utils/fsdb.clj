@@ -128,6 +128,10 @@
   (get data
        (get-collection-key coll :id)))
 
+(defn now
+  "Returns the current timestamp."
+  []
+  (java.time.Instant/now))
 
 
 ;;; ----------------------------------------------------------------------------
@@ -156,7 +160,7 @@
 (defn next-id!
   "Returns a java.util.UUID object."
   []
-  (java.util.UUID/randomUUID))
+  (str (java.util.UUID/randomUUID)))
 
 
 (defn setup!
@@ -165,7 +169,11 @@
   (when-not (fs/exists? db-dir)
     (fs/mkdirs db-dir))
   (when-not (fs/exists? settings-path)
-    (let [opts (merge {:use-qualified-keywords? false}
+    (let [opts (merge {;; use the collection name as the keyword ns
+                       :use-qualified-keywords? false
+                       ;; automatically add created-at and updated fields when 
+                       ;; writing documents.
+                       :add-timestamps? true}
                       opts)]
       (save-edn! settings-path opts)))
   (load-settings!))
@@ -267,6 +275,24 @@
        (first result)
        result))))
 
+(defn maybe-add-created-at [data k timestamp]
+  (if (contains? data k)
+    data
+    (assoc data k timestamp)))
+
+(defn add-updated-at [data k timestamp]
+  (assoc data k timestamp))
+
+(defn maybe-add-timestamps
+  [data coll]
+  (if-not (:add-timestamps? @settings)
+    data
+    (let [timestamp (now)]
+      (-> data
+          (maybe-add-created-at
+           (get-collection-key coll :created-at) timestamp)
+          (add-updated-at (get-collection-key coll :updated-at) timestamp)))))
+
 
 (defn create-raw!
   "Creates a new document. `data` must contain the id of the document. 
@@ -278,7 +304,8 @@
            "automatically generated."))
 
   (let [id (get-id coll data)
-        path (io/file (resource-path coll) (str id))]
+        path (io/file (resource-path coll) (str id))
+        data (maybe-add-timestamps data coll)]
 
     (fs/mkdirs path)
 
@@ -310,11 +337,12 @@
         doc-file (get-doc-file coll id)]
 
     (when (fs/exists? doc-file)
-      (if (= save-mode :set)
-        (save-edn! doc-file data)
-        (save-edn! doc-file
-                   (merge (get-by-id {:coll coll :id id})
-                          data))))))
+      (let [data (maybe-add-timestamps data coll)]
+        (if (= save-mode :set)
+          (save-edn! doc-file data)
+          (save-edn! doc-file
+                     (merge (get-by-id {:coll coll :id id})
+                            data)))))))
 
 
 (defn upsert!
