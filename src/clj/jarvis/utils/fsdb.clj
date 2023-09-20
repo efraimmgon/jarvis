@@ -358,14 +358,15 @@
 
 ; TODO: test
 (defn delete!
-  "Deletes the document. If successful returns true. If it doesn't exist, 
-   returns false."
+  "Deletes the document. If successful returns the document id. 
+   If it doesn't exist, returns false."
   [{:keys [coll id]}]
 
   ;; delete the dir at id: /{db-dir}/{coll}/---->{id}/<----
-  (some-> (io/file (resource-path coll) (str id))
-          fs/delete-dir))
-
+  (if (some-> (io/file (resource-path coll) (str id))
+              fs/delete-dir)
+    id
+    false))
 
 
 (comment

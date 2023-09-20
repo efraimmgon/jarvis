@@ -4,7 +4,7 @@
    [reitit.frontend.easy :as rfe]
    [re-frame.core :as rf]
    [jarvis.apps.dashboard.views :as dashboard]
-   [jarvis.apps.projects :as projects]))
+   [jarvis.apps.projects.core :as projects]))
 
 
 (defn page []

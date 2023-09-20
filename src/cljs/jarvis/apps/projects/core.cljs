@@ -1,4 +1,4 @@
-(ns jarvis.apps.projects
+(ns jarvis.apps.projects.core
   (:require
    [ajax.core :as ajax]
    [reagent.core :as r]
@@ -209,10 +209,10 @@
 (rf/reg-event-db
  :projects/delete-project-success
  base-interceptors
- (fn [db [project]]
+ (fn [db [project-id]]
    (update db :projects/all
            #(remove (fn [p]
-                      (= (:id p) (:id project)))
+                      (= (:id p) project-id))
                     %))))
 
 ;;; ---------------------------------------------------------------------------
