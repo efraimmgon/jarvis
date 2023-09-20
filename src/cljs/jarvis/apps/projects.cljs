@@ -188,6 +188,12 @@
  (fn [db [projects]]
    (assoc db :projects/all projects)))
 
+(rf/reg-event-fx
+ :projects/get-project-by-id-success
+ base-interceptors
+ (fn [db [project]]
+   (assoc db :projects/active project)))
+
 (rf/reg-event-db
  :projects/create-project-success
  base-interceptors
@@ -216,72 +222,68 @@
 (rf/reg-event-fx
  :projects/all-projects
  base-interceptors
- (fn [_ [{:keys [coll on-success on-failure]}]]
-   {:http-xhrio
-    {:method :post
-     :uri "/api/fsdb"
-     :params (fsdb/get-all {:coll coll})
-     :format (ajax/json-request-format)
-     :response-format (ajax/json-response-format {:keywords? true})
-     :on-success (or on-success [:projects/all-projects-success])
-     :on-failure (or on-failure [:common/log])}}))
+ (fn [_ _]
+   (let [user (rf/subscribe [:identity])
+         q (fsdb/get-all {:coll [:users (:id @user) :projects]})]
+     {:dispatch
+      [:fsdb/query
+       {:params q
+        :on-success [:projects/all-projects-success]}]})))
 
+
+(rf/reg-event-fx
+ :projects/get-project-by-id
+ base-interceptors
+ (fn [_ [{:keys [id]}]]
+   (let [user (rf/subscribe [:identity])
+         q (fsdb/get-by-id {:coll [:users (:id @user) :projects]
+                            :id id})]
+     {:dispatch
+      [:fsdb/query
+       {:params q
+        :on-success [:projects/get-project-by-id-success]}]})))
 
 (rf/reg-event-fx
  :projects/create-project!
  base-interceptors
- (fn [_ [{:keys [coll data on-success on-failure]}]]
-   {:http-xhrio
-    {:method :post
-     :uri "/api/fsdb"
-     :params (fsdb/create! {:coll coll
-                            :data data})
-     :format (ajax/json-request-format)
-     :response-format (ajax/json-response-format {:keywords? true})
-     :on-success (or on-success [:projects/create-project-success])
-     :on-failure (or on-failure [:common/log])}}))
+ (fn [_ [{:keys [data]}]]
+   (let [user (rf/subscribe [:identity])
+         q (fsdb/create! {:coll [:users (:id @user) :projects]
+                          :data data})]
+     {:dispatch
+      [:fsdb/query
+       {:params q
+        :on-success [:projects/create-project-success]}]})))
 
 
 (rf/reg-event-fx
  :projects/update-project!
  base-interceptors
- (fn [_ [{:keys [on-success on-failure] :as params}]]
-   {:http-xhrio
-    {:method :post
-     :uri "/api/fsdb"
-     :params (fsdb/update! (select-keys params [:coll :where :data :opts]))
-     :format (ajax/json-request-format)
-     :response-format (ajax/json-response-format {:keywords? true})
-     :on-success (or on-success [:projects/update-project-success])
-     :on-failure (or on-failure [:common/log])}}))
+ (fn [_ [params]]
+   (let [user (rf/subscribe [:identity])
+         q (fsdb/update!
+            (assoc (select-keys params [:where :data :opts])
+                   :coll [:users (:id @user) :projects]))]
+     {:dispatch
+      [:fsdb/query
+       {:params q
+        :on-success [:projects/update-project-success]}]})))
 
 
 (rf/reg-event-fx
  :projects/delete-project!
  base-interceptors
- (fn [_ [{:keys [coll id on-success on-failure]}]]
-   {:http-xhrio
-    {:method :post
-     :uri "/api/fsdb"
-     :params (fsdb/delete! {:coll coll
-                            :id id})
-     :format (ajax/json-request-format)
-     :response-format (ajax/json-response-format {:keywords? true})
-     :on-success (or on-success [:projects/delete-project-success])
-     :on-failure (or on-failure [:common/log])}}))
+ (fn [_ [{:keys [id]}]]
+   (let [user (rf/subscribe [:identity])
+         q (fsdb/delete! {:coll [:users (:id @user) :projects]
+                          :id id})]
+     {:dispatch
+      [:fsdb/query
+       {:params q
+        :on-success [:projects/delete-project-success]}]})))
+
 
 ;; subscriptions
 
 (rf/reg-sub :projects/all query)
 (rf/reg-sub :projects/active query)
-
-(comment
-
-  (rf/dispatch
-   [:projects/create-project!
-    {:name "Journal"
-     :description "Daily Journals Archive: A dedicated space for storing daily written reflections, thoughts, and experiences. Updated daily, intended for personal growth and historical record."
-     :owner "bfe84dfb-6652-4d72-97a5-45176423c7cd"}])
-
-
-  :end)

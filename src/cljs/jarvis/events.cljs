@@ -91,6 +91,12 @@
            :jarvis.chat/status :idle})))
 
 
+(rf/reg-event-db
+ :set-identity
+ base-interceptors
+ (fn [db [user]]
+   (assoc db :identity user)))
+
 
 ;;; ---------------------------------------------------------------------------
 ;;; SUBSCRIPTIONS

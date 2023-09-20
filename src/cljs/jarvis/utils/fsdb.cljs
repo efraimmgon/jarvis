@@ -52,6 +52,11 @@
   {:fn :delete!
    :params params})
 
+(defn delete-coll!
+  [{:keys [coll] :as params}]
+  {:fn :delete-coll!
+   :params params})
+
 
 (rf/reg-event-fx
  :fsdb/query
@@ -62,11 +67,6 @@
                  :params params
                  :format (ajax/json-request-format)
                  :response-format (ajax/json-response-format {:keywords? true})
-                 :on-success on-success
+                 :on-success (or on-success [:common/log])
                  :on-failure (or on-failure [:common/log])}}))
-
-(defn delete-coll!
-  [{:keys [coll] :as params}]
-  {:fn :delete-coll!
-   :params params})
 
