@@ -7,54 +7,54 @@
 
 (defn get-by-id
   [{:keys [coll id] :as params}]
-  {:fn :get-by-id
+  {:fun :get-by-id
    :params params})
 
 
 (defn get-all
   [{:keys [coll] :as params}]
-  {:fn :get-all
+  {:fun :get-all
    :params params})
 
 
 (defn select
   [{:keys [coll where order-by offset limit] :as params}]
-  {:fn :select
+  {:fun :select
    :params params})
 
 
 (defn create!
   [{:keys [coll data] :as params}]
-  {:fn :create!
+  {:fun :create!
    :params params})
 
 
 (defn create-raw!
   [{:keys [coll data] :as params}]
-  {:fn :create-raw!
+  {:fun :create-raw!
    :params params})
 
 
 (defn update!
   [{:keys [coll where data opts] :as params}]
-  {:fn :update!
+  {:fun :update!
    :params params})
 
 
 (defn upsert!
   [{:keys [coll where data opts] :as params}]
-  {:fn :upsert!
+  {:fun :upsert!
    :params params})
 
 
 (defn delete!
   [{:keys [coll id] :as params}]
-  {:fn :delete!
+  {:fun :delete!
    :params params})
 
 (defn delete-coll!
   [{:keys [coll] :as params}]
-  {:fn :delete-coll!
+  {:fun :delete-coll!
    :params params})
 
 
