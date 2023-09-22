@@ -100,8 +100,12 @@
      (when (fs/exists? file)
        file))))
 
-(defn get-doc-file [coll id]
-  (io/file (resource-path coll) (str id) "data.edn"))
+(defn get-doc-file
+  "Returns the file where the document is stored."
+  ([coll]
+   (io/file (resource-path coll) "data.edn"))
+  ([coll id]
+   (io/file (resource-path coll) (str id) "data.edn")))
 
 (defn use-qualified-keywords?
   "Returns true if the settings file has the :use-qualified-keywords? 
@@ -184,7 +188,6 @@
   []
   (fs/delete-dir db-dir)
   (setup!))
-
 
 (setup!)
 
@@ -322,19 +325,29 @@
                     id)]
     (create-raw! {:coll coll :data data})))
 
+(defn where-id-file
+  [{:keys [coll where]}]
+  (let [id (get-id coll where)]
+    [id, (get-doc-file coll id)]))
+
+(defn coll-id-file
+  [{:keys [coll]}]
+  [(last coll), (get-resource coll)])
+
 
 (defn update!
   "Updates the document for the given id, only for the keys given in `data`.
     If a document can't be found, returns nil.
-    Takes a map with the `coll`, `where` clause, and the `data`.
+    Takes a map with the `coll`, ?`where` clause, and the `data`.
     
    `opts` is a map with `save-mode` which is set to `:merge` by default,
    but can be set to `:set`, which will replace the whole document with
    the content of `data`."
-  [{:keys [coll where data opts]}]
+  [{:keys [coll where data opts] :as params}]
   (let [save-mode (or (:save-mode opts) :merge)
-        id (get-id coll where)
-        doc-file (get-doc-file coll id)]
+        [id doc-file] (if where
+                        (where-id-file params)
+                        (coll-id-file params))]
 
     (when (fs/exists? doc-file)
       (let [data (maybe-add-timestamps data coll)]
@@ -347,10 +360,11 @@
 
 (defn upsert!
   "Updates the document if it exists, otherwise creates it.
-   Takes a map with the `coll`, `where` clause, and the `data`."
-  [{:keys [coll where data opts] :as params}]
-  (let [id (get-id coll where)
-        doc-file (get-doc-file coll id)]
+   Takes a map with the `coll`, ?`where` clause, and the `data`."
+  [{:keys [_coll where _data _opts] :as params}]
+  (let [[_id doc-file] (if where
+                         (where-id-file params)
+                         (coll-id-file params))]
     (if (fs/exists? doc-file)
       (update! params)
       (create! (select-keys params [:coll :data])))))
@@ -458,8 +472,4 @@
 
   (delete! {:coll [:users user-id :profiles]}))
 
-
-
-
-;;;; =>> test with nested collections
 ;;;; =>> add assertions to basic helper functions

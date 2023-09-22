@@ -15,7 +15,7 @@
   (-> response :data first :embedding))
 
 (defn get-tokens [response]
-  (-> response :data :embedding :usage :total_tokens))
+  (-> response :embedding :usage :total_tokens))
 
 
 ; save embeddings into the project given
@@ -45,9 +45,9 @@
 
 ; max 8191 tokens
 (rf/reg-event-fx
- :create-embeddings
+ :create-embedding
  base-interceptors
- (fn [{:keys [_]} [{:keys [input on-success on-failure]}]]
+ (fn [_ [{:keys [input on-success on-failure]}]]
    {:http-xhrio {:uri "https://api.openai.com/v1/embeddings"
                  :method :post
                  :headers {"Authorization" (str "Bearer " env/openai-api-key)}
@@ -57,4 +57,21 @@
                           :model "text-embedding-ada-002"}
                  :on-success on-success
                  :on-failure (or on-failure [:common/log])}}))
+
+
+(defn create-embedding!
+  "Create an embedding using open ai api."
+  [input]
+  (js/Promise.
+   (fn [resolve reject]
+     (ajax/ajax-request
+      {:method :post
+       :uri "https://api.openai.com/v1/embeddings"
+       :headers {"Authorization" (str "Bearer " env/openai-api-key)}
+       :params {:input input
+                :model "text-embedding-ada-002"}
+       :response-format (ajax/json-response-format {:keywords? true})
+       :format (ajax/json-request-format)
+       :handler resolve
+       :error-handler reject}))))
 
