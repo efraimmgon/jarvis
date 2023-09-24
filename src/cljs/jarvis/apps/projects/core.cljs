@@ -1,11 +1,14 @@
 (ns jarvis.apps.projects.core
   (:require
-   [ajax.core :as ajax]
    [reagent.core :as r]
    [re-frame.core :as rf]
-   [jarvis.utils.events :refer [base-interceptors query]]
-   [jarvis.utils.fsdb :as fsdb]
-   [jarvis.utils.views :as views]))
+   [reitit.frontend.easy :as rfe]
+   [jarvis.utils.views :as views]
+   [jarvis.apps.projects.documents :as documents]
+   [jarvis.apps.projects.new-project :refer [new-project-ui]]
+   [jarvis.apps.projects.edit-project :refer [edit-project-ui]]
+   jarvis.apps.projects.handlers))
+
 
 
 ;;; ---------------------------------------------------------------------------
@@ -22,12 +25,11 @@
 
    [:div
     {:class "col-lg-4 col-md-12 my-auto text-end"}
-    [:button
-     {:type "button",
+    [:a
+     {:href (rfe/href :projects/new)
       :class "btn bg-gradient-primary mb-0 mt-0 mt-md-n9 mt-lg-0"}
      [:i
-      {:class
-       "material-icons text-white position-relative text-md pe-2"}
+      {:class "material-icons text-white position-relative text-md pe-2"}
       "add"]
      "Add New"]]])
 
@@ -36,7 +38,7 @@
 
 (defn project-ui [project]
   [:div {:class "col-lg-4 col-md-6 mb-4"}
-   [linkfy (str "/projects/" (:id project))
+   [linkfy (rfe/href :projects/edit {:project-id (:id project)})
     [:div
      {:class "card"}
      [:div
@@ -131,32 +133,14 @@
            "Due date"]])]]]]])
 
 
-
-(def mock-projects
-  (r/atom [{:id 1
-            :name "Project 1"
-            :description "Project 1 description"
-            :participants [{:id 1
-                            :username "User 1"
-                            :profile {:avatar {:src "https://via.placeholder.com/150"
-                                               :alt "User 1"}}}
-                           {:id 2
-                            :username "User 2"
-                            :profile {:avatar {:src "https://via.placeholder.com/150"
-                                               :alt "User 2"}}}]
-            :due-date "2021-10-10"}
-           {:id 2
-            :name "Project 2"}]))
-
-
 (defn list-projects []
-  (r/with-let [projects (r/atom nil)]
+  (r/with-let [projects (rf/subscribe [:projects/all])]
     [:div
      {:class "row mt-lg-4 mt-2"}
-     (if (empty? @mock-projects)
+     (if (empty? @projects)
        [:p "No projects yet."]
        (doall
-        (for [project @mock-projects]
+        (for [project @projects]
           ^{:key (:id project)}
           [project-ui project])))]))
 
@@ -174,116 +158,32 @@
      [list-projects]]]])
 
 
-;;; ---------------------------------------------------------------------------
-;;; Handlers
-;;; ---------------------------------------------------------------------------
-
 
 ;;; ---------------------------------------------------------------------------
-;;; Response hanlders
+;;; Router
 
-(rf/reg-event-fx
- :projects/all-projects-success
- base-interceptors
- (fn [db [projects]]
-   (assoc db :projects/all projects)))
+(def router
+  ["/projects"
 
-(rf/reg-event-fx
- :projects/get-project-by-id-success
- base-interceptors
- (fn [db [project]]
-   (assoc db :projects/active project)))
+   ["/new"
+    {:name :projects/new
+     :view #'new-project-ui}]
 
-(rf/reg-event-db
- :projects/create-project-success
- base-interceptors
- (fn [db [project]]
-   (update db :projects/all conj project)))
+   ["/{project-id}"
+    {:parameters {:path {:project-id string?}}
+     :controllers [{:parameters {:path [:project-id]}
+                    :start (fn [path]
+                             (rf/dispatch
+                              [:projects/load-by-id
+                               (get-in path [:path :project-id])]))
+                    :stop (fn [_]
+                            (rf/dispatch
+                             [:assoc-in [:project/active] nil]))}]}
 
-(rf/reg-event-db
- :projects/update-project-success
- base-interceptors
- (fn [db [project]]
-   (assoc db :projects/active project)))
-
-(rf/reg-event-db
- :projects/delete-project-success
- base-interceptors
- (fn [db [project-id]]
-   (update db :projects/all
-           #(remove (fn [p]
-                      (= (:id p) project-id))
-                    %))))
-
-;;; ---------------------------------------------------------------------------
-;;; Main handlers
+    ["/edit"
+     {:name :projects/edit
+      :view #'edit-project-ui}]]])
+   
+   
 
 
-(rf/reg-event-fx
- :projects/all-projects
- base-interceptors
- (fn [_ _]
-   (let [user (rf/subscribe [:identity])
-         q (fsdb/get-all {:coll [:users (:id @user) :projects]})]
-     {:dispatch
-      [:fsdb/query
-       {:params q
-        :on-success [:projects/all-projects-success]}]})))
-
-
-(rf/reg-event-fx
- :projects/get-project-by-id
- base-interceptors
- (fn [_ [{:keys [id]}]]
-   (let [user (rf/subscribe [:identity])
-         q (fsdb/get-by-id {:coll [:users (:id @user) :projects]
-                            :id id})]
-     {:dispatch
-      [:fsdb/query
-       {:params q
-        :on-success [:projects/get-project-by-id-success]}]})))
-
-(rf/reg-event-fx
- :projects/create-project!
- base-interceptors
- (fn [_ [{:keys [data]}]]
-   (let [user (rf/subscribe [:identity])
-         q (fsdb/create! {:coll [:users (:id @user) :projects]
-                          :data data})]
-     {:dispatch
-      [:fsdb/query
-       {:params q
-        :on-success [:projects/create-project-success]}]})))
-
-
-(rf/reg-event-fx
- :projects/update-project!
- base-interceptors
- (fn [_ [params]]
-   (let [user (rf/subscribe [:identity])
-         q (fsdb/update!
-            (assoc (select-keys params [:where :data :opts])
-                   :coll [:users (:id @user) :projects]))]
-     {:dispatch
-      [:fsdb/query
-       {:params q
-        :on-success [:projects/update-project-success]}]})))
-
-
-(rf/reg-event-fx
- :projects/delete-project!
- base-interceptors
- (fn [_ [{:keys [id]}]]
-   (let [user (rf/subscribe [:identity])
-         q (fsdb/delete! {:coll [:users (:id @user) :projects]
-                          :id id})]
-     {:dispatch
-      [:fsdb/query
-       {:params q
-        :on-success [:projects/delete-project-success]}]})))
-
-
-;; subscriptions
-
-(rf/reg-sub :projects/all query)
-(rf/reg-sub :projects/active query)

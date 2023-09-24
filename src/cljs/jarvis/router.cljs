@@ -4,8 +4,7 @@
    [reitit.frontend.easy :as rfe]
    [re-frame.core :as rf]
    [jarvis.apps.dashboard.views :as dashboard]
-   [jarvis.apps.projects.core :as projects]
-   [jarvis.apps.projects.documents :as documents]))
+   [jarvis.apps.projects.core :as projects]))
 
 
 (defn page []
@@ -20,11 +19,12 @@
 (def router
   (reitit/router
    [["/" {:name        :home
-          :view        #'projects/all-projects-ui}]
-    ["/projects"
-     ["/new"
-      {:name :projects/new
-       :view #'dashboard/dashboard-ui}]]]))
+          :view        #'projects/all-projects-ui
+          :controllers [{:start (fn [_]
+                                  (rf/dispatch [:projects/load]))}]}]
+
+    [projects/router]]))
+
 
 
 (defn start-router! []

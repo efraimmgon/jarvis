@@ -88,7 +88,16 @@
  (fn [db _]
    (merge db
           {:jarvis/chat []
-           :jarvis.chat/status :idle})))
+           :jarvis.chat/status :idle
+           :identity {:active? true,
+                      :updated-at #inst "2023-09-20T19:10:43.555558000-00:00",
+                      :email "example@gmail.com",
+                      :password "bcrypt+sha512$86186fc28f83b3e3db78bcf8350a3a57$12$8f215420e68fd7922561167b07354f05d8db6d49e212689e",
+                      :username "admin",
+                      :admin? true,
+                      :last-login nil,
+                      :id "c4aeb292-b001-4c43-8d14-d5aeede93bbb",
+                      :created-at #inst "2023-09-20T19:10:43.553787000-00:00"}})))
 
 
 (rf/reg-event-db

@@ -1,4 +1,34 @@
-(ns jarvis.utils.input)
+(ns jarvis.utils.input
+  (:require [re-frame.core :as rf]
+            [reagent.core :as r]))
+
+
+; add css:
+; <link href="//cdn.quilljs.com/1.0.0/quill.snow.css" rel="stylesheet" />
+
+(defn rich-text-editor
+  [{:keys [display-name doc name]}]
+  (r/create-class
+   {:display-name (or display-name (str "RichTextEditor-" (clojure.core/name name)))
+
+    :component-did-mount
+    (fn [_]
+      (let [editor (js/Quill.
+                    (str "#" (clojure.core/name name))
+                    (clj->js
+                     {:theme "snow"}))]
+        (when-let [content (get @doc name)]
+          (->> content
+               js/JSON.parse
+               (.setContents editor)))
+        (swap! doc assoc
+               (keyword (str (clojure.core/name name) "-editor"))
+               editor)))
+
+    :reagent-render
+    (fn []
+      [:div
+       {:id (clojure.core/name name)}])}))
 
 
 ;;; ---------------------------------------------------------------------------
@@ -8,10 +38,10 @@
 
 (defn clean-attrs [attrs]
   (dissoc attrs
-    :doc
-    :default-value
-    :save-fn
-    :display-fn))
+          :doc
+          :default-value
+          :save-fn
+          :display-fn))
 
 ; NOTE: Reason for `""`: 
 ; https://zhenyong.github.io/react/tips/controlled-input-null-value.html
@@ -21,8 +51,8 @@
 
 (defn target-value [event]
   (-> event
-    .-target
-    .-value))
+      .-target
+      .-value))
 
 
 (defn parse-number [string]
@@ -41,13 +71,13 @@
   [{:keys [doc name] :as attrs}]
   (let [edited-attrs
         (merge {:on-change #(swap! doc assoc name (target-value %))}
-          (-> attrs
-            clean-attrs))]
+               (-> attrs
+                   clean-attrs))]
     (fn []
       [:input
        (assoc edited-attrs
-         :value (value-attr (get @doc name))
-         :type :text)])))
+              :value (value-attr (get @doc name))
+              :type :text)])))
 
 
 (defn number-input
@@ -56,13 +86,13 @@
         (merge {:on-change (fn [event]
                              (let [value (-> event .-target .-value)]
                                (swap! doc assoc name (parse-number value))))}
-          (-> attrs
-            clean-attrs))]
+               (-> attrs
+                   clean-attrs))]
     (fn []
       [:input
        (assoc edited-attrs
-         :value (value-attr (get @doc name))
-         :type :number)])))
+              :value (value-attr (get @doc name))
+              :type :number)])))
 
 
 (defn textarea
@@ -71,12 +101,12 @@
         (merge {:on-change (fn [event]
                              (let [value (-> event .-target .-value)]
                                (swap! doc assoc name value)))}
-          (-> attrs
-            clean-attrs))]
+               (-> attrs
+                   clean-attrs))]
     (fn []
       [:textarea
        (assoc edited-attrs
-         :value (value-attr (get @doc name)))])))
+              :value (value-attr (get @doc name)))])))
 
 
 (defn datetime-input
@@ -90,15 +120,15 @@
                                (reset! temporary-value value)))
                 :on-blur (fn [_]
                            (let [value (save-fn
-                                         @temporary-value)]
+                                        @temporary-value)]
                              (swap! doc assoc name value)))}
-          (-> attrs
-            clean-attrs))]
+               (-> attrs
+                   clean-attrs))]
     (fn []
       [:input
        (assoc edited-attrs
-         :value (value-attr (display-fn (get @doc name)))
-         :type :datetime-local)])))
+              :value (value-attr (display-fn (get @doc name)))
+              :type :datetime-local)])))
 
 
 (defn select
@@ -109,15 +139,15 @@
         (merge {:on-change (fn [event]
                              (let [value (-> event .-target .-value)]
                                (swap! doc assoc name (save-fn value))))}
-          (-> attrs
-            clean-attrs))]
+               (-> attrs
+                   clean-attrs))]
     (when (and default-value (nil? (get @doc name)))
       (swap! doc assoc name default-value))
     (fn []
       (into [:select
              (assoc edited-attrs
-               :value (value-attr (get @doc name)))]
-        options))))
+                    :value (value-attr (get @doc name)))]
+            options))))
 
 
 (comment
@@ -131,18 +161,19 @@
   [{:keys [doc name value] :as attrs}]
   (let [f (fn [acc]
             (let [acc (cond (empty? acc) #{}
-                        (set? acc) acc
-                        (coll? acc) (set acc)
-                        :else #{acc})]
+                            (set? acc) acc
+                            (coll? acc) (set acc)
+                            :else #{acc})]
               (if (get acc value)
                 (disj acc value)
                 (conj acc value))))
         edited-attrs
-        (merge {:on-change #(swap! doc update name f value)}
-          (clean-attrs attrs))]
+        (merge {:type :checkbox
+                :on-change #(swap! doc update name f value)}
+               (clean-attrs attrs))]
     (fn []
       [:input (assoc edited-attrs
-                :checked (boolean (get (get @doc name) value)))])))
+                     :checked (boolean (get (get @doc name) value)))])))
 
 (defn checkbox-comp
   "Checkbox component, with common boilerplate."
@@ -151,7 +182,7 @@
    [:label.form-check-label
     [checkbox-input
      (assoc attrs
-       :type :checkbox
-       :class (or class "form-check-input"))]
+            :type :checkbox
+            :class (or class "form-check-input"))]
     label
     [:span.form-check-sign>span.check]]])

@@ -176,7 +176,7 @@
 
 (s/def :fsdb/fun keyword?)
 (s/def :fsdb/coll (s/or :keyword keyword? :string string? :vector vector?))
-(s/def :fsdb/id (s/or :string string? :int int?))
+(s/def :fsdb/id (s/nilable (s/or :string string? :int int?)))
 (s/def :fsdb/data map?)
 (s/def :fsdb/where map?)
 (s/def :fsdb/order-by map?)
