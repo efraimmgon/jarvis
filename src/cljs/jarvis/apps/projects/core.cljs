@@ -7,7 +7,8 @@
    [jarvis.apps.projects.documents :as documents]
    [jarvis.apps.projects.new-project :refer [new-project-ui]]
    [jarvis.apps.projects.edit-project :refer [edit-project-ui]]
-   jarvis.apps.projects.handlers))
+   jarvis.apps.projects.handlers
+   [jarvis.utils.input :as input]))
 
 
 
@@ -104,9 +105,14 @@
              {:class "dropdown-item", :href "javascript:;"}
              "Something else here"]]]]]
 
-               ;; PROJECT DESCRIPTION
-      [:p {:class "text-sm mt-3"}
-       (:description project)]
+
+      ;; PROJECT DESCRIPTION 
+
+      [:p
+       {:class "text-sm mt-3"
+        :dangerouslySetInnerHTML
+        {:__html (-> project :description clj->js input/editorjs-parser)}}]
+
 
       [:hr {:class "horizontal dark"}]
 
@@ -178,7 +184,7 @@
                                (get-in path [:path :project-id])]))
                     :stop (fn [_]
                             (rf/dispatch
-                             [:assoc-in [:project/active] nil]))}]}
+                             [:projects/set-active nil]))}]}
 
     ["/edit"
      {:name :projects/edit

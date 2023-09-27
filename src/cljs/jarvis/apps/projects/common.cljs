@@ -1,5 +1,6 @@
 (ns jarvis.apps.projects.common
-  (:require [jarvis.utils.input :as input]
+  (:require [jarvis.utils.events :refer [<sub]]
+            [jarvis.utils.input :as input]
             [jarvis.utils.views :as views]
             [re-frame.core :as rf]
             [reitit.frontend.easy :as rfe]))
@@ -64,12 +65,13 @@
              {:type :checkbox
               :class "form-check-input"
               :on-change #(swap! project update :boosted? not)
-              :checked (:boosted? @project)}]]]]]
+              :checked (boolean (:boosted? @project))}]]]]]
 
         ; Project description
         [:label {:class "mt-4"} "Project Description"]
 
         ; editor
+
         [input/rich-text-editor
          {:doc project,
           :name :description}]
@@ -84,10 +86,24 @@
 
          (if (:id @project)
            [:button
-            {:on-click #(rf/dispatch [:projects/update! project])
+            {:on-click #(-> ^js (:description @project)
+                            .save
+                            (.then
+                             (fn [output-data]
+                               (rf/dispatch
+                                [:projects/update!
+                                 (assoc @project :description output-data)]))))
              :class "btn bg-gradient-dark m-0 ms-2"}
             "Update Project"]
            [:button
-            {:on-click #(rf/dispatch [:projects/create! project])
+            {:on-click #(-> ^js (:description @project)
+                            .save
+                            (.then
+                             (fn [output-data]
+                               (rf/dispatch
+                                [:projects/create!
+                                 (assoc @project :description output-data)]))))
+
+
              :class "btn bg-gradient-dark m-0 ms-2"}
             "Create Project"])]]]]]]])
