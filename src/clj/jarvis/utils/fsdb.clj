@@ -103,9 +103,13 @@
 (defn get-doc-file
   "Returns the file where the document is stored."
   ([coll]
-   (io/file (resource-path coll) "data.edn"))
+   (let [file (io/file (resource-path coll) "data.edn")]
+     (when (fs/exists? file)
+       file)))
   ([coll id]
-   (io/file (resource-path coll) (str id) "data.edn")))
+   (let [file (io/file (resource-path coll) (str id) "data.edn")]
+     (when (fs/exists? file)
+       file))))
 
 (defn use-qualified-keywords?
   "Returns true if the settings file has the :use-qualified-keywords? 
@@ -238,8 +242,9 @@
 (defn get-by-id
   "Returns the contents of the document queried, if exists."
   [{:keys [coll id]}]
-  (some-> (get-resource coll id)
-          (io/file "data.edn")
+  (some-> (if id
+            (get-doc-file coll id)
+            (get-doc-file coll))
           load-edn))
 
 (defn get-all
@@ -278,12 +283,16 @@
        (first result)
        result))))
 
-(defn maybe-add-created-at [data k timestamp]
+(defn maybe-add-created-at
+  "Adds the created-at field to the data if it doesn't exist."
+  [data k timestamp]
   (if (contains? data k)
     data
     (assoc data k timestamp)))
 
-(defn add-updated-at [data k timestamp]
+(defn add-updated-at
+  "Adds the updated-at field to the data."
+  [data k timestamp]
   (assoc data k timestamp))
 
 (defn maybe-add-timestamps
@@ -294,7 +303,8 @@
       (-> data
           (maybe-add-created-at
            (get-collection-key coll :created-at) timestamp)
-          (add-updated-at (get-collection-key coll :updated-at) timestamp)))))
+          (add-updated-at
+           (get-collection-key coll :updated-at) timestamp)))))
 
 
 (defn create-raw!
@@ -325,6 +335,7 @@
                     id)]
     (create-raw! {:coll coll :data data})))
 
+
 (defn where-id-file
   [{:keys [coll where]}]
   (let [id (get-id coll where)]
@@ -332,7 +343,7 @@
 
 (defn coll-id-file
   [{:keys [coll]}]
-  [(last coll), (get-resource coll)])
+  [nil, (get-doc-file coll)])
 
 
 (defn update!
@@ -350,12 +361,19 @@
                         (coll-id-file params))]
 
     (when (fs/exists? doc-file)
-      (let [data (maybe-add-timestamps data coll)]
-        (if (= save-mode :set)
-          (save-edn! doc-file data)
-          (save-edn! doc-file
-                     (merge (get-by-id {:coll coll :id id})
-                            data)))))))
+      (let [data (maybe-add-timestamps data coll)
+            old (get-by-id {:coll coll :id id})
+            new (if (= save-mode :set)
+                  data
+                  (merge old data))]
+        (save-edn! doc-file new)))))
+
+;; (def coll [:users "c4aeb292-b001-4c43-8d14-d5aeede93bbb"
+;;            :projects "7f8a9684-519b-4284-afd6-8651a12e7060"])
+;; (update! {:coll coll
+;;           :data {:name "updated"}})
+;; (get-by-id {:coll coll})
+(get-by-id {:coll ["tests" 1] :id nil})
 
 
 (defn upsert!
@@ -381,6 +399,50 @@
               fs/delete-dir)
     id
     false))
+
+#_(defn run-tests! []
+    (let [coll "tests"
+          data {:id 1
+                :name "test"}]
+
+      (when (fs/exists? (resource-path coll))
+        (delete-coll! {:coll coll}))
+
+      (swap! settings assoc :add-timestamps? false)
+
+    ; create
+      (println "create")
+      (create-raw! {:coll coll :data data})
+
+    ; get-by-id
+      (println "get-by-id")
+      (assert (= true (fs/exists? (get-doc-file coll 1))))
+      (assert (= data (get-by-id {:coll [coll 1]})))
+      (assert (= data (get-by-id {:coll coll :id 1})))
+
+    ; get-all
+      (println "get-all")
+      (assert (= 1 (count (get-all {:coll coll}))))
+      (assert (= data (first (get-all {:coll coll}))))
+
+    ; update
+      (println "update")
+      (update! {:coll [coll 1]
+                :data {:name "updated"}})
+      (assert (= {:id 1
+                  :name "updated"}
+                 (get-by-id {:coll [coll 1]})))
+
+    ; delete
+      (println "delete")
+      (delete! {:coll coll :id 1})
+      (assert (= nil (get-doc-file coll 1)))
+      (assert (= 0 (count (get-all {:coll coll}))))
+      (assert (= nil (get-by-id {:coll [coll 1]})))
+
+      (delete-coll! {:coll coll})
+      (assert (= false (fs/exists? (resource-path coll))))))
+
 
 
 (comment
@@ -408,6 +470,7 @@
   ; path to the collection.
   ; example: [:users user-id :profiles]
   ; all other functions work the same.
+
 
   "tests:"
 
