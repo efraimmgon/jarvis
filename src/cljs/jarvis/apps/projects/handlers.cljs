@@ -54,14 +54,16 @@
                        %))
     :dispatch [:navigate! :home]}))
 
-(rf/reg-event-db
- :projects/delete-project-success
+(rf/reg-event-fx
+ :projects/delete-success
  base-interceptors
- (fn [db [project-id]]
-   (update db :projects/all
-           #(remove (fn [p]
-                      (= (:id p) project-id))
-                    %))))
+ (fn [{:keys [db]} [project-id]]
+   {:db (update db :projects/all
+                #(remove (fn [p]
+                           (= (:id p) project-id))
+                         %))
+    :dispatch [:navigate! :home]}))
+
 
 ;;; ---------------------------------------------------------------------------
 ;;; Main handlers
@@ -120,16 +122,14 @@
 
 
 (rf/reg-event-fx
- :projects/delete-project!
+ :projects/delete!
  base-interceptors
- (fn [_ [{:keys [id]}]]
-   (let [user (rf/subscribe [:identity])
-         q (fsdb/delete! {:coll [:users (:id @user) :projects]
-                          :id id})]
+ (fn [_ [{:keys [id user-id]}]]
+   (let [q (fsdb/delete! {:coll [:users user-id :projects id]})]
      {:dispatch
       [:fsdb/query
        {:params q
-        :on-success [:projects/delete-project-success]}]})))
+        :on-success [:projects/delete-success]}]})))
 
 
 ;; subscriptions

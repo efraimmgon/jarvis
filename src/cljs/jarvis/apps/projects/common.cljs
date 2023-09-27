@@ -27,7 +27,12 @@
         [:h6 {:class "mb-0"}
          (if (:id @project)
            (:name @project)
-           "New Project")]]
+           "New Project")
+         (when (:id @project)
+           ; button on the right
+           [:button.btn.btn-danger.ms-2.float-end
+            {:on-click #(rf/dispatch [:projects/delete! @project])}
+            [:i.material-icons "delete_forever"]])]]
 
 
        ; card body
