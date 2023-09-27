@@ -26,7 +26,8 @@
                                  (rf/dispatch
                                   [:projects/set nil]))}]}]
 
-    [projects/router]]))
+    ;; /projects...
+    projects/router]))
 
 
 

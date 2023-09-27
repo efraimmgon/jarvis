@@ -6,8 +6,9 @@
    [jarvis.utils.views :as views]
    [jarvis.apps.projects.new-project :refer [new-project-ui]]
    [jarvis.apps.projects.edit-project :refer [edit-project-ui]]
-   jarvis.apps.projects.handlers
-   [jarvis.utils.input :as input]))
+   [jarvis.utils.input :as input]
+   [jarvis.apps.projects.documents.core :as documents]
+   jarvis.apps.projects.handlers))
 
 
 
@@ -38,7 +39,7 @@
 
 (defn project-ui [project]
   [:div {:class "col-lg-4 col-md-6 mb-4"}
-   [linkfy (rfe/href :projects/edit {:project-id (:id project)})
+   [linkfy (rfe/href :projects.documents/list {:project-id (:id project)})
     [:div
      {:class "card"}
      [:div
@@ -187,7 +188,10 @@
 
     ["/edit"
      {:name :projects/edit
-      :view #'edit-project-ui}]]])
+      :view #'edit-project-ui}]
+
+    ;; /documents...
+    documents/router]])
    
    
 

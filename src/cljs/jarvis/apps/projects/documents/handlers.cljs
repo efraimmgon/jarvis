@@ -1,6 +1,5 @@
 (ns jarvis.apps.projects.documents.handlers
   (:require
-   [reagent.core :as r]
    [re-frame.core :as rf]
    [jarvis.apps.embeddings :as embeddings]
    [jarvis.utils.events :refer [base-interceptors query]]
@@ -10,7 +9,6 @@
 ;;; Handlers
 ;;; ---------------------------------------------------------------------------
 
-
 ;;; ---------------------------------------------------------------------------
 ;;; Response hanlders
 
@@ -19,7 +17,7 @@
  :projects.documents/create-success
  base-interceptors
  (fn [db [document]]
-   (update db :projects.documents/all conj document)))
+   (update db :projects.documents/list conj document)))
 
 (rf/reg-event-db
  :projects.documents/get-by-id-success
@@ -28,16 +26,16 @@
    (assoc db :projects.documents/active document)))
 
 (rf/reg-event-db
- :projects.documents/get-all-success
+ :projects.documents/load-success
  base-interceptors
  (fn [db [documents]]
-   (assoc db :projects.documents/all documents)))
+   (assoc db :projects.documents/list documents)))
 
 (rf/reg-event-db
  :projects.documents/select-success
  base-interceptors
  (fn [db [documents]]
-   (assoc db :projects.documents/all documents)))
+   (assoc db :projects.documents/list documents)))
 
 (rf/reg-event-db
  :projects.documents/update-success
@@ -49,7 +47,7 @@
  :projects.documents/delete-success
  base-interceptors
  (fn [db [doc-id]]
-   (update db :projects.documents/all
+   (update db :projects.documents/list
            #(remove (fn [p]
                       (= (:id p) doc-id))
                     %))))
@@ -129,15 +127,17 @@
 
 
 (rf/reg-event-fx
- :projects.documents/get-all
+ :projects.documents/load
  base-interceptors
- (fn [_ [{:keys [project-id]}]]
+ (fn [_ [project-id]]
    (let [user (rf/subscribe [:identity])
-         q (fsdb/get-all {:coll [:users (:id @user) :projects project-id :documents]})]
+         q (fsdb/get-all {:coll [:users (:id @user)
+                                 :projects project-id
+                                 :documents]})]
      {:dispatch
       [:fsdb/query
        {:params q
-        :on-success [:projects.documents/get-all-success]}]})))
+        :on-success [:projects.documents/load-success]}]})))
 
 
 (rf/reg-event-fx
@@ -203,5 +203,5 @@
 ;;; Subs
 
 
-(rf/reg-sub :projects.documents/all query)
+(rf/reg-sub :projects.documents/list query)
 (rf/reg-sub :projects.documents/active query)
