@@ -4,7 +4,6 @@
    [re-frame.core :as rf]
    [reitit.frontend.easy :as rfe]
    [jarvis.utils.views :as views]
-   [jarvis.apps.projects.documents :as documents]
    [jarvis.apps.projects.new-project :refer [new-project-ui]]
    [jarvis.apps.projects.edit-project :refer [edit-project-ui]]
    jarvis.apps.projects.handlers

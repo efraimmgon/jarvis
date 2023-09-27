@@ -1,4 +1,4 @@
-(ns jarvis.apps.projects.documents
+(ns jarvis.apps.projects.documents.handlers
   (:require
    [reagent.core :as r]
    [re-frame.core :as rf]
