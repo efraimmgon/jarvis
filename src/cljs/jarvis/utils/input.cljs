@@ -1,34 +1,49 @@
 (ns jarvis.utils.input
-  (:require [re-frame.core :as rf]
-            [reagent.core :as r]))
+  (:require [reagent.core :as r]
+            ["@editorjs/editorjs" :as EditorJS]
+            ["@editorjs/header" :as Header]
+            ["@editorjs/list" :as List-]
+            ["editorjs-html" :as editorjs-html]
+            [re-frame.core :as rf]))
 
-
-; add css:
-; <link href="//cdn.quilljs.com/1.0.0/quill.snow.css" rel="stylesheet" />
 
 (defn rich-text-editor
   [{:keys [display-name doc name]}]
   (r/create-class
-   {:display-name (or display-name (str "RichTextEditor-" (clojure.core/name name)))
+   {:display-name (or display-name
+                      (str "RichTextEditor-" (clojure.core/name name)))
 
     :component-did-mount
     (fn [_]
-      (let [editor (js/Quill.
-                    (str "#" (clojure.core/name name))
+      (let [editor (EditorJS.
                     (clj->js
-                     {:theme "snow"}))]
-        (when-let [content (get @doc name)]
-          (->> content
-               js/JSON.parse
-               (.setContents editor)))
-        (swap! doc assoc
-               (keyword (str (clojure.core/name name) "-editor"))
-               editor)))
+                     {:holder "editorjs"
+                      :tools {:header Header
+                              :list List-}
+                      :data (or (get @doc name) {})}))]
+
+        (swap! doc assoc name editor)))
 
     :reagent-render
     (fn []
       [:div
-       {:id (clojure.core/name name)}])}))
+       {:id "editorjs"
+        :class "border border-gray-300 rounded p-2"}])}))
+
+(defn editorjs-parser [data]
+  (when data
+    (let [edjsParser (editorjs-html)]
+      (edjsParser.parse data))))
+
+(comment
+
+
+  (let [projs (rf/subscribe [:projects/all])]
+    (editorjs-parser
+     (-> @projs
+         first
+         :description
+         clj->js))))
 
 
 ;;; ---------------------------------------------------------------------------

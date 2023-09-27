@@ -1,5 +1,5 @@
 (ns jarvis.apps.projects.handlers
-  (:require [jarvis.utils.events :refer [base-interceptors query]]
+  (:require [jarvis.utils.events :refer [<sub base-interceptors query]]
             [jarvis.utils.fsdb :as fsdb]
             [re-frame.core :as rf]))
 
@@ -8,20 +8,32 @@
 ;;; Handlers
 ;;; ---------------------------------------------------------------------------
 
+
 ;;; ---------------------------------------------------------------------------
-;;; Response hanlders
+;;; Utils
+
+
+(defn prepare-project
+  [{:keys [user-id] :as project}]
+  (cond-> project
+    (not user-id) (assoc :user-id (:id (<sub [:identity])))))
 
 (rf/reg-event-db
- :projects/load-success
+ :projects/set-active
+ base-interceptors
+ (fn [db [project]]
+   (assoc db :projects/active project)))
+
+(rf/reg-event-db
+ :projects/set
  base-interceptors
  (fn [db [projects]]
    (assoc db :projects/all projects)))
 
-(rf/reg-event-db
- :projects/load-by-id-success
- base-interceptors
- (fn [db [project]]
-   (assoc db :projects/active project)))
+
+;;; ---------------------------------------------------------------------------
+;;; Response hanlders
+
 
 (rf/reg-event-fx
  :projects/create-success
@@ -30,11 +42,17 @@
    {:db (update db :projects/all conj project)
     :dispatch [:navigate! :projects/documents {:project-id (:id project)}]}))
 
-(rf/reg-event-db
- :projects/update-project-success
+(rf/reg-event-fx
+ :projects/update-success
  base-interceptors
- (fn [db [project]]
-   (assoc db :projects/active project)))
+ (fn [{:keys [db]} [project]]
+   {:db (update db :projects/all
+                #(mapv (fn [p]
+                         (if (= (:id p) (:id project))
+                           project
+                           p))
+                       %))
+    :dispatch [:navigate! :home]}))
 
 (rf/reg-event-db
  :projects/delete-project-success
@@ -58,7 +76,7 @@
      {:dispatch
       [:fsdb/query
        {:params q
-        :on-success [:projects/load-success]}]})))
+        :on-success [:projects/set]}]})))
 
 
 (rf/reg-event-fx
@@ -70,33 +88,35 @@
      {:dispatch
       [:fsdb/query
        {:params q
-        :on-success [:projects/load-by-id-success]}]})))
+        :on-success [:projects/set-active]}]})))
+
 
 (rf/reg-event-fx
  :projects/create!
  base-interceptors
- (fn [_ [{:keys [data]}]]
+ (fn [_ [data]]
    (let [user (rf/subscribe [:identity])
          q (fsdb/create! {:coll [:users (:id @user) :projects]
-                          :data data})]
+                          :data (prepare-project data)})]
      {:dispatch
       [:fsdb/query
        {:params q
         :on-success [:projects/create-success]}]})))
 
 
+
+
 (rf/reg-event-fx
- :projects/update-project!
+ :projects/update!
  base-interceptors
- (fn [_ [params]]
-   (let [user (rf/subscribe [:identity])
-         q (fsdb/update!
-            (assoc (select-keys params [:where :data :opts])
-                   :coll [:users (:id @user) :projects]))]
+ (fn [_ [{:keys [user-id id] :as params}]]
+   (let [q (fsdb/update! {:coll [:users user-id :projects id]
+                          :data (select-keys params
+                                             [:name :description :boosted?])})]
      {:dispatch
       [:fsdb/query
        {:params q
-        :on-success [:projects/update-project-success]}]})))
+        :on-success [:projects/update-success]}]})))
 
 
 (rf/reg-event-fx
