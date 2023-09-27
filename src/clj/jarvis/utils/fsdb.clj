@@ -403,7 +403,8 @@
 #_(defn run-tests! []
     (let [coll "tests"
           data {:id 1
-                :name "test"}]
+                :name "test 1"}
+          doc2 (atom nil)]
 
       (when (fs/exists? (resource-path coll))
         (delete-coll! {:coll coll}))
@@ -412,18 +413,21 @@
 
     ; create
       (println "create")
+      (let [doc (create! {:coll coll :data {:name "test 2"}})]
+        (reset! doc2 doc))
       (create-raw! {:coll coll :data data})
 
     ; get-by-id
       (println "get-by-id")
       (assert (= true (fs/exists? (get-doc-file coll 1))))
+      (assert (= true (fs/exists? (get-doc-file coll (:id @doc2)))))
       (assert (= data (get-by-id {:coll [coll 1]})))
       (assert (= data (get-by-id {:coll coll :id 1})))
+      (assert (= @doc2 (get-by-id {:coll [coll (:id @doc2)]})))
 
     ; get-all
       (println "get-all")
-      (assert (= 1 (count (get-all {:coll coll}))))
-      (assert (= data (first (get-all {:coll coll}))))
+      (assert (= 2 (count (get-all {:coll coll}))))
 
     ; update
       (println "update")
@@ -437,13 +441,14 @@
       (println "delete")
       (delete! {:coll coll :id 1})
       (assert (= nil (get-doc-file coll 1)))
+      (delete! {:coll [coll (:id @doc2)]})
       (assert (= 0 (count (get-all {:coll coll}))))
       (assert (= nil (get-by-id {:coll [coll 1]})))
 
       (delete-coll! {:coll coll})
       (assert (= false (fs/exists? (resource-path coll))))))
 
-
+#_(run-tests!)
 
 (comment
 
