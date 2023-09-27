@@ -21,7 +21,10 @@
    [["/" {:name        :home
           :view        #'projects/all-projects-ui
           :controllers [{:start (fn [_]
-                                  (rf/dispatch [:projects/load]))}]}]
+                                  (rf/dispatch [:projects/load]))
+                         :stop (fn [_]
+                                 (rf/dispatch
+                                  [:projects/set nil]))}]}]
 
     [projects/router]]))
 
