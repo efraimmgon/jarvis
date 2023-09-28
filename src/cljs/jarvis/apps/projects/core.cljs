@@ -1,14 +1,14 @@
 (ns jarvis.apps.projects.core
   (:require
-   [reagent.core :as r]
-   [re-frame.core :as rf]
-   [reitit.frontend.easy :as rfe]
-   [jarvis.utils.views :as views]
-   [jarvis.apps.projects.new-project :refer [new-project-ui]]
-   [jarvis.apps.projects.edit-project :refer [edit-project-ui]]
-   [jarvis.utils.input :as input]
-   [jarvis.apps.projects.documents.core :as documents]
-   jarvis.apps.projects.handlers))
+    [reagent.core :as r]
+    [re-frame.core :as rf]
+    [reitit.frontend.easy :as rfe]
+    [jarvis.utils.views :as views]
+    [jarvis.apps.projects.new-project :refer [new-project-ui]]
+    [jarvis.apps.projects.edit-project :refer [edit-project-ui]]
+    [jarvis.utils.input :as input]
+    [jarvis.apps.projects.documents.core :as documents]
+    jarvis.apps.projects.handlers))
 
 
 
@@ -47,7 +47,7 @@
       [:div
        {:class "d-flex mt-n2"}
 
-          ;; PROJECT LOGO
+       ;; PROJECT LOGO
        (if-let [logo (:logo project)]
          [:div
           {:class
@@ -62,14 +62,14 @@
            {:src "/logo-slack.svg",
             :alt "placeholder"}]])
 
-          ;; PROJECT HEADER
+       ;; PROJECT HEADER
        [:div
         {:class "ms-3 my-auto"}
 
-           ;; PROJECT NAME
+        ;; PROJECT NAME
         [:h6 {:class "mb-0"} (:name project)]
 
-           ;; AVATAR LIST (USERS INVOLVED)
+        ;; AVATAR LIST (USERS INVOLVED)
         #_(when-let [participants (seq (:participants project))]
             [:div
              {:class "avatar-group"}
@@ -82,7 +82,7 @@
                  :data-original-title (:username user)}])])]
 
 
-                ;; DROPDOWN ACTIONS
+       ;; DROPDOWN ACTIONS
        #_[:div
           {:class "ms-auto"}
           [:div
@@ -116,11 +116,11 @@
 
       [:hr {:class "horizontal dark"}]
 
-         ;; PROJECT FOOTER
+      ;; PROJECT FOOTER
       [:div
        {:class "row"}
 
-          ;; PARTICIPANTS
+       ;; PARTICIPANTS
        (when-let [participants (seq (:participants project))]
          [:div
           {:class "col-6"}
@@ -129,7 +129,7 @@
            {:class "text-secondary text-sm font-weight-normal mb-0"}
            "Participants"]])
 
-          ;; DUE DATE
+       ;; DUE DATE
        (when-let [due-date (:due-date project)]
          [:div
           {:class "col-6 text-end"}
@@ -146,9 +146,9 @@
      (if (empty? @projects)
        [:p "No projects yet."]
        (doall
-        (for [project @projects]
-          ^{:key (:id project)}
-          [project-ui project])))]))
+         (for [project @projects]
+           ^{:key (:id project)}
+           [project-ui project])))]))
 
 
 
@@ -180,11 +180,11 @@
      :controllers [{:parameters {:path [:project-id]}
                     :start (fn [path]
                              (rf/dispatch
-                              [:projects/load-by-id
-                               (get-in path [:path :project-id])]))
+                               [:projects/load-by-id
+                                (get-in path [:path :project-id])]))
                     :stop (fn [_]
                             (rf/dispatch
-                             [:projects/set-active nil]))}]}
+                              [:projects/set-active nil]))}]}
 
     ["/edit"
      {:name :projects/edit

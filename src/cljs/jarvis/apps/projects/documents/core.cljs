@@ -1,22 +1,19 @@
 (ns jarvis.apps.projects.documents.core
   (:require [jarvis.utils.input :as input]
-            [jarvis.utils.views :as views]
-            [re-frame.core :as rf]
-            [reagent.core :as r]
-            [reitit.frontend.easy :as rfe]
-            jarvis.apps.projects.documents.handlers))
+    [jarvis.utils.views :as views]
+    [re-frame.core :as rf]
+    [reagent.core :as r]
+    [reitit.frontend.easy :as rfe]
+    [jarvis.apps.projects.documents.edit-document :refer [edit-document-ui]]
+    [jarvis.apps.projects.documents.new-document :refer [new-document-ui]]
+    jarvis.apps.projects.documents.handlers))
 
-; TODO
-(defn new-document-ui [])
-
-; TODO
-(defn edit-document-ui [])
 
 ;;; ---------------------------------------------------------------------------
 ;;; Views
 ;;; ---------------------------------------------------------------------------
 
-(defn document-ui [document]
+(defn document-item-ui [document]
   [:div {:class "col-lg-4 col-md-6 mb-4"}
    [:a {:href (rfe/href :projects/edit {:project-id (:id document)})}
     [:div
@@ -73,7 +70,7 @@
            "Due date"]])]]]]])
 
 
-(defn documents-header []
+(defn documents-header [project]
   [:div
    {:class "row mb-4 mb-md-0"}
 
@@ -84,7 +81,7 @@
    [:div
     {:class "col-lg-4 col-md-12 my-auto text-end"}
     [:a
-     {:href (rfe/href :projects/new)
+     {:href (rfe/href :projects.documents/new {:project-id (:id @project)})
       :class "btn bg-gradient-primary mb-0 mt-0 mt-md-n9 mt-lg-0"}
      [:i
       {:class "material-icons text-white position-relative text-md pe-2"}
@@ -92,28 +89,31 @@
      "Add New"]]])
 
 
-(defn list-documents []
-  (r/with-let [documents (rf/subscribe [:projects.documents/list])]
-    [:div
-     {:class "row mt-lg-4 mt-2"}
-     (if (empty? @documents)
-       [:p "No documents yet."]
-       (doall
-        (for [project @documents]
-          ^{:key (:id project)}
-          [document-ui project])))]))
+(defn list-documents [documents]
+  [:div
+   {:class "row mt-lg-4 mt-2"}
+   (if (empty? @documents)
+     [:p "No documents yet."]
+     (doall
+       (for [project @documents]
+         ^{:key (:id project)}
+         [document-item-ui project])))])
+
 
 
 (defn all-documents-ui []
-  [views/dashboard-base-ui
-   [:div
-    {:class "container-fluid py-4"}
-    [:section
-     {:class "py-3"}
+  (r/with-let [project (rf/subscribe [:projects/active])
+               documents (rf/subscribe [:projects.documents/list])]
+    (set! (.-title js/document) (str (:name @project) " - Documents"))
+    [views/dashboard-base-ui
+     [:div
+      {:class "container-fluid py-4"}
+      [:section
+       {:class "py-3"}
 
-     [documents-header]
+       [documents-header project]
 
-     [list-documents]]]])
+       [list-documents documents]]]]))
 
 
 ;;; ---------------------------------------------------------------------------
@@ -128,11 +128,11 @@
      :controllers [{:parameters {:path [:project-id]}
                     :start (fn [path]
                              (rf/dispatch
-                              [:projects.documents/load
-                               (get-in path [:path :project-id])]))
+                               [:projects.documents/load
+                                (get-in path [:path :project-id])]))
                     :stop (fn [_]
                             (rf/dispatch
-                             [:projects.documents/set nil]))}]}]
+                              [:projects.documents/set nil]))}]}]
 
    ; TODO
    ["/new"
