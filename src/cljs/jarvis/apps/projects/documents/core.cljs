@@ -13,9 +13,11 @@
 ;;; Views
 ;;; ---------------------------------------------------------------------------
 
-(defn document-item-ui [document]
+(defn document-item-ui [{:keys [id project-id name content] :as document}]
   [:div {:class "col-lg-4 col-md-6 mb-4"}
-   [:a {:href (rfe/href :projects/edit {:project-id (:id document)})}
+   [:a {:href (rfe/href :projects.documents/edit 
+                {:project-id project-id
+                 :document-id id})}
     [:div
      {:class "card"}
      [:div
@@ -43,7 +45,7 @@
         {:class "ms-3 my-auto"}
 
         ;; NAME
-        [:h6 {:class "mb-0"} (:name document)]]]
+        [:h6 {:class "mb-0"} name]]]
 
 
       ;; DESCRIPTION 
@@ -51,7 +53,7 @@
       [:p
        {:class "text-sm mt-3"
         :dangerouslySetInnerHTML
-        {:__html (-> document :description clj->js input/editorjs-parser)}}]
+        {:__html (-> content clj->js input/editorjs-parser)}}]
 
 
       [:hr {:class "horizontal dark"}]
@@ -128,19 +130,29 @@
      :controllers [{:parameters {:path [:project-id]}
                     :start (fn [path]
                              (rf/dispatch
-                               [:projects.documents/load
+                               [:projects.documents/load-list
                                 (get-in path [:path :project-id])]))
                     :stop (fn [_]
                             (rf/dispatch
-                              [:projects.documents/set nil]))}]}]
+                              [:projects.documents/set-list nil]))}]}]
 
-   ; TODO
    ["/new"
     {:name :projects.documents/new
      :view #'new-document-ui}]
+   
 
-   ; TODO
-   ["/:document-id/edit"
-    {::parameters {:path {:document-id string?}}
-     :name :projects.documents/edit
-     :view #'edit-document-ui}]])
+   ["/{document-id}"
+    {:parameters {:path {:document-id string?}}
+     :controllers [{:parameters {:path [:project-id :document-id]}
+                    :start (fn [path]
+                             (rf/dispatch
+                               [:projects.documents/load-by-id
+                                (get-in path [:path :project-id])
+                                (get-in path [:path :document-id])]))
+                    :stop (fn [_]
+                            (rf/dispatch
+                              [:projects.documents/set-active nil]))}]}
+    
+    ["/edit"
+     {:name :projects.documents/edit
+      :view #'edit-document-ui}]]])

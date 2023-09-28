@@ -10,7 +10,7 @@
 ;;; ---------------------------------------------------------------------------
 
 ;;; ---------------------------------------------------------------------------
-;;; Response hanlders
+;;; Response handlers
 
 
 (rf/reg-event-fx
@@ -22,7 +22,7 @@
                 {:project-id project-id}]}))
 
 (rf/reg-event-db
-  :projects.documents/get-by-id-success
+  :projects.documents/load-by-id-success
   base-interceptors
   (fn [db [document]]
     (assoc db :projects.documents/active document)))
@@ -39,11 +39,15 @@
   (fn [db [documents]]
     (assoc db :projects.documents/list documents)))
 
-(rf/reg-event-db
+(rf/reg-event-fx
   :projects.documents/update-success
   base-interceptors
-  (fn [db [document]]
-    (assoc db :projects.documents/active document)))
+  (fn [{:keys [db]} [{:keys [project-id document-id] :as document}]]
+    {:db (assoc db :projects.documents/active document)
+     :dispatch [:navigate! :projects.documents/list
+                {:project-id project-id
+                 :document-id document-id}]}))
+    
 
 (rf/reg-event-db
   :projects.documents/delete-success
@@ -62,9 +66,9 @@
 (defn with-embedding!
   "Takes a document and returns a new document with the embedding assoced."
   [{:keys [data on-success]}]
-  (let [p>response (embeddings/create-embedding!
-                     (str (:name data) "\n\n" (:content data)))]
-    (-> p>response
+  (let [response+ (embeddings/create-embedding!
+                    (str (:name data) "\n\n" (:content data)))]
+    (-> response+
       (.then (fn [response]
                (println "Tokens:" (embeddings/get-tokens response))
                (on-success
@@ -73,11 +77,16 @@
       (.catch prn))))
 
 (rf/reg-event-db
-  :projects.documents/set
+  :projects.documents/set-list
   base-interceptors
   (fn [db [documents]]
     (assoc db :projects.documents/list documents)))
 
+(rf/reg-event-db
+  :projects.documents/set-active
+  base-interceptors
+  (fn [db [document]]
+    (assoc db :projects.documents/active document)))
 
 
 ;;; ---------------------------------------------------------------------------
@@ -122,20 +131,22 @@
 
 
 (rf/reg-event-fx
-  :projects.documents/get-by-id
+  :projects.documents/load-by-id
   base-interceptors
-  (fn [_ [{:keys [project-id id]}]]
+  (fn [_ [project-id id]]
     (let [user (rf/subscribe [:identity])
-          q (fsdb/get-by-id {:coll [:users (:id @user) :projects project-id :documents]
-                             :id id})]
+          q (fsdb/get-by-id {:coll [:users (:id @user) 
+                                    :projects project-id 
+                                    :documents id]})]
+
       {:dispatch
        [:fsdb/query
         {:params q
-         :on-success [:projects.documents/get-by-id-success]}]})))
+         :on-success [:projects.documents/load-by-id-success]}]})))
 
 
 (rf/reg-event-fx
-  :projects.documents/load
+  :projects.documents/load-list
   base-interceptors
   (fn [_ [project-id]]
     (let [user (rf/subscribe [:identity])
@@ -165,11 +176,11 @@
 (rf/reg-event-fx
   :projects.documents/update-with-embedding!
   base-interceptors
-  (fn [_ [{:keys [data] :as params} resp-emb]]
+  (fn [_ [data resp-emb]]
     (let [{:keys [project-id id user-id]} data
           embedding (embeddings/get-embedding resp-emb)
           q (fsdb/update!
-              (-> params
+              (-> {:data data}
                 (assoc :coll [:users user-id :projects project-id :documents id])
                 (assoc-in [:data :embedding] embedding)))
           embedding-id (str project-id "_" id)]
@@ -187,11 +198,11 @@
 (rf/reg-event-fx
   :projects.documents/update!
   base-interceptors
-  (fn [_ [{:keys [data] :as params}]]
+  (fn [_ [data]]
     {:dispatch
      [:create-embedding
       {:input (str (:name data) "\n\n" (:content data))
-       :on-success [:projects.documents/update-with-embedding! params]}]}))
+       :on-success [:projects.documents/update-with-embedding! data]}]}))
 
 
 (rf/reg-event-fx
