@@ -30,7 +30,6 @@
              name
              "New Document")
            (when id
-             ; button on the right
              [:button.btn.btn-danger.ms-2.float-end
               {:on-click #(rf/dispatch [:projects.documents/delete! @document])}
               [:i.material-icons "delete_forever"]])]]

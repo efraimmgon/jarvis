@@ -49,14 +49,18 @@
                  :document-id document-id}]}))
     
 
-(rf/reg-event-db
+(rf/reg-event-fx
   :projects.documents/delete-success
   base-interceptors
-  (fn [db [doc-id]]
-    (update db :projects.documents/list
-      #(remove (fn [p]
-                 (= (:id p) doc-id))
-         %))))
+  (fn [{:keys [db]} [project-id doc-id]]
+    {:db (update db :projects.documents/list
+           #(remove (fn [doc]
+                      (= (:id doc) doc-id))
+              %))
+     :dispatch [:navigate! :projects.documents/list
+                {:project-id project-id}]}))
+
+    
 
 
 ;;; ---------------------------------------------------------------------------
@@ -208,14 +212,14 @@
 (rf/reg-event-fx
   :projects.documents/delete!
   base-interceptors
-  (fn [_ [{:keys [project-id id]}]]
-    (let [user (rf/subscribe [:identity])
-          q (fsdb/delete! {:coll [:users (:id @user) :projects project-id :documents]
-                           :id id})]
-      {:dispatch-n
+  (fn [_ [{:keys [project-id user-id id]}]]
+    (let [q (fsdb/delete! {:coll [:users user-id 
+                                  :projects project-id 
+                                  :documents id]})]
+      {:dispatch
        [:fsdb/query
         {:params q
-         :on-success [:projects.documents/delete-success]}]})))
+         :on-success [:projects.documents/delete-success project-id]}]})))
 
 
 ;;; ---------------------------------------------------------------------------
