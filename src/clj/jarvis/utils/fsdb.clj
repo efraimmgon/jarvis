@@ -1,11 +1,11 @@
 (ns jarvis.utils.fsdb
   (:require
-   clojure.edn
-   clojure.pprint
-   [clojure.java.io :as io]
-   [me.raynes.fs :as fs])
+    clojure.edn
+    clojure.pprint
+    [clojure.java.io :as io]
+    [me.raynes.fs :as fs])
   (:import
-   java.time.Instant))
+    java.time.Instant))
 
 ;;; ----------------------------------------------------------------------------
 ;;; Filesystem-based Database
@@ -14,6 +14,11 @@
 ;;; ----------------------------------------------------------------------------
 ;;; Utils
 ;;; ----------------------------------------------------------------------------
+
+
+;; So that java.time.Instant prints as a inst literal
+(defmethod print-method Instant [obj ^java.io.Writer w]
+  (.write w (str "#inst \"" (.toString obj) "\"")))
 
 
 ;;; All the data is placed inside the resources/db folder, by default.
@@ -28,9 +33,9 @@
   (try
     (with-open [r (io/reader source)]
       (clojure.edn/read
-       {:readers {'inst #(Instant/parse %)}}
-       (java.io.PushbackReader.
-        r)))
+        {:readers {'inst #(Instant/parse %)}}
+        (java.io.PushbackReader.
+          r)))
 
     (catch java.io.IOException e
       (printf "Couldn't open '%s': %s\n" source (.getMessage e)))
@@ -70,7 +75,7 @@
   [path]
   (if (coll? path)
     (->> path
-         (map parse-coll))
+      (map parse-coll))
     [(parse-coll path)]))
 
 
@@ -127,14 +132,14 @@
     (keyword (-> (if (coll? cname)
                    (last cname)
                    cname)
-                 name)
-             (name field))
+               name)
+      (name field))
     field))
 
 (defn get-id
   [coll data]
   (get data
-       (get-collection-key coll :id)))
+    (get-collection-key coll :id)))
 
 (defn now
   "Returns the current timestamp."
@@ -182,7 +187,7 @@
                        ;; automatically add created-at and updated fields when 
                        ;; writing documents.
                        :add-timestamps? true}
-                      opts)]
+                 opts)]
       (save-edn! settings-path opts)))
   (load-settings!))
 
@@ -214,8 +219,8 @@
       (fs/mkdir path)
 
       (save-edn!
-       settings-path
-       (swap! settings update :collections assoc coll config)))))
+        settings-path
+        (swap! settings update :collections assoc coll config)))))
 
 
 (defn delete-coll!
@@ -229,7 +234,7 @@
 (defn exists?
   [{:keys [coll]}]
   (fs/exists?
-   (get-resource coll)))
+    (get-resource coll)))
 
 
 ;;; ----------------------------------------------------------------------------
@@ -245,15 +250,15 @@
   (some-> (if id
             (get-doc-file coll id)
             (get-doc-file coll))
-          load-edn))
+    load-edn))
 
 (defn get-all
   "Reads and returns the contents of the given collection."
   [{:keys [coll]}]
   (some->> (get-resource coll)
-           fs/list-dir
-           (map fs/name)
-           (map #(get-by-id {:coll coll :id %}))))
+    fs/list-dir
+    (map fs/name)
+    (map #(get-by-id {:coll coll :id %}))))
 
 
 (defn order-by-helper [order-by-key documents]
@@ -275,10 +280,10 @@
   ([{:keys [coll where order-by offset limit]}]
    (let [result
          (some->> (get-all {:coll coll})
-                  where (filter where)
-                  order-by (order-by-helper order-by)
-                  offset (drop offset)
-                  limit (take limit))]
+           where (filter where)
+           order-by (order-by-helper order-by)
+           offset (drop offset)
+           limit (take limit))]
      (if (= limit 1)
        (first result)
        result))))
@@ -301,10 +306,10 @@
     data
     (let [timestamp (now)]
       (-> data
-          (maybe-add-created-at
-           (get-collection-key coll :created-at) timestamp)
-          (add-updated-at
-           (get-collection-key coll :updated-at) timestamp)))))
+        (maybe-add-created-at
+          (get-collection-key coll :created-at) timestamp)
+        (add-updated-at
+          (get-collection-key coll :updated-at) timestamp)))))
 
 
 (defn create-raw!
@@ -312,9 +317,9 @@
    Returns `data` if successful."
   [{:keys [coll data]}]
   (assert (contains? data (get-collection-key coll :id))
-          (str
-           "You must provide an `id` key, or use `create!` to have it "
-           "automatically generated."))
+    (str
+      "You must provide an `id` key, or use `create!` to have it "
+      "automatically generated."))
 
   (let [id (get-id coll data)
         path (io/file (resource-path coll) (str id))
@@ -323,7 +328,7 @@
     (fs/mkdirs path)
 
     (save-edn! (io/file path "data.edn")
-               data)))
+      data)))
 
 
 (defn create!
@@ -331,8 +336,8 @@
   [{:keys [coll data]}]
   (let [id (next-id!)
         data (assoc data
-                    (get-collection-key coll :id)
-                    id)]
+               (get-collection-key coll :id)
+               id)]
     (create-raw! {:coll coll :data data})))
 
 
@@ -396,7 +401,7 @@
 
   ;; delete the dir at id: /{db-dir}/{coll}/---->{id}/<----
   (if (some-> (io/file (resource-path coll) (str id))
-              fs/delete-dir)
+        fs/delete-dir)
     id
     false))
 
@@ -411,13 +416,13 @@
 
       (swap! settings assoc :add-timestamps? false)
 
-    ; create
+      ; create
       (println "create")
       (let [doc (create! {:coll coll :data {:name "test 2"}})]
         (reset! doc2 doc))
       (create-raw! {:coll coll :data data})
 
-    ; get-by-id
+      ; get-by-id
       (println "get-by-id")
       (assert (= true (fs/exists? (get-doc-file coll 1))))
       (assert (= true (fs/exists? (get-doc-file coll (:id @doc2)))))
@@ -425,19 +430,19 @@
       (assert (= data (get-by-id {:coll coll :id 1})))
       (assert (= @doc2 (get-by-id {:coll [coll (:id @doc2)]})))
 
-    ; get-all
+      ; get-all
       (println "get-all")
       (assert (= 2 (count (get-all {:coll coll}))))
 
-    ; update
+      ; update
       (println "update")
       (update! {:coll [coll 1]
                 :data {:name "updated"}})
       (assert (= {:id 1
                   :name "updated"}
-                 (get-by-id {:coll [coll 1]})))
+                (get-by-id {:coll [coll 1]})))
 
-    ; delete
+      ; delete
       (println "delete")
       (delete! {:coll coll :id 1})
       (assert (= nil (get-doc-file coll 1)))
@@ -492,8 +497,8 @@
   (get-all {:coll :users})
 
   (get-by-id {:coll :users, :id (-> (get-all {:coll :users})
-                                    first
-                                    :users/id)})
+                                  first
+                                  :users/id)})
 
 
 
@@ -525,8 +530,8 @@
   ; you can nest collections by your hearts content using vectors:
   (def user-id "47353bf7-7607-45f3-a46b-5a579fdd1e1d")
   (create-raw!
-   {:coll [:users user-id :profiles]
-    :data {:profiles/id "Guest"}})
+    {:coll [:users user-id :profiles]
+     :data {:profiles/id "Guest"}})
 
   ; all other operations work the same:
   (get-by-id {:coll [:users user-id :profiles]
@@ -539,5 +544,3 @@
             :data {:profiles/dob "2023-01-01"}})
 
   (delete! {:coll [:users user-id :profiles]}))
-
-;;;; =>> add assertions to basic helper functions
